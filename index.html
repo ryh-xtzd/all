@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2026 健身日历</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <main class="app">
+        <header class="hero">
+            <h1>2026 健身日历</h1>
+            <p>起始日期：2026-03-13，周期：练三休一（背/胸/腿/休）</p>
+        </header>
+
+        <section class="stats" aria-label="统计信息">
+            <article class="stat-card">
+                <h2>实际练习天数</h2>
+                <p id="actualCount" class="stat-value">0 天</p>
+                <small>点击训练日可切换“已完成”</small>
+            </article>
+            <article class="stat-card">
+                <h2>按计划应练天数</h2>
+                <p id="plannedCount" class="stat-value">0 天</p>
+                <small>从起始日到今天（含休息）</small>
+            </article>
+            <article class="stat-card">
+                <h2>已坚持时长</h2>
+                <p id="durationText" class="stat-value">0 个月 0 天</p>
+                <small>包含休息日</small>
+            </article>
+        </section>
+
+        <section class="legend" aria-label="颜色说明">
+            <span><i class="dot train"></i>训练日（浅绿）</span>
+            <span><i class="dot rest"></i>休息日（白）</span>
+            <span><i class="dot future"></i>未来日期（黑）</span>
+        </section>
+
+        <section class="calendar-wrap" aria-label="日历">
+            <div class="toolbar">
+                <button id="prevMonth" type="button">上一月</button>
+                <h2 id="monthTitle">2026年1月</h2>
+                <button id="nextMonth" type="button">下一月</button>
+            </div>
+
+            <div class="weekday-row" role="row">
+                <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+            </div>
+
+            <div id="calendarGrid" class="grid" role="grid"></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
