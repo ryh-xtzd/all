@@ -2,13 +2,14 @@ const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
 const WORKOUT_TYPES = ["背", "胸", "腿"];
 
+
 const WEIGHT_STORAGE_KEY = "fitness-weight-map-v1";
 const SHIFT_STORAGE_KEY = "fitness-shift-map-v1";
 const DEVICE_STORAGE_KEY = "fitness-device-id-v1";
 
 // Optional: enable Supabase by setting URL/ANON key and creating fitness_weights/fitness_shifts tables.
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://rdzmtrwjrnzkjtdxbqeq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_k_rASAwO7pnk4kdRPBLkJw___nqnYof";
 const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
 
 let supabaseClient = null;
