@@ -11,7 +11,6 @@ const SYNC_KEY = "ryh-2026";
 // Optional: enable Supabase by setting URL/ANON key and creating fitness_weights/fitness_shifts tables.
 const SUPABASE_URL = "https://rdzmtrwjrnzkjtdxbqeq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_k_rASAwO7pnk4kdRPBLkJw___nqnYof";
-const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
 
 let supabaseClient = null;
 let visibleMonth = clampMonth(new Date().getMonth());
@@ -94,14 +93,18 @@ async function init() {
         }
     }
 
-    if (SUPABASE_ENABLED) {
+    if (isSupabaseEnabled()) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         await testSupabase();
         await hydrateFromRemote();
     } else {
-        setCloudStatus("云端：未连接", "error");
+        setCloudStatus("云端：未连接（配置缺失）", "error");
     }
     render();
+}
+
+function isSupabaseEnabled() {
+    return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
 }
 
 function loadSupabaseSdk() {
