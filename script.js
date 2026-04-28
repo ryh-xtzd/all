@@ -23,6 +23,7 @@ const monthTitle = document.getElementById("monthTitle");
 const calendarGrid = document.getElementById("calendarGrid");
 const trainDaysEl = document.getElementById("trainDays");
 const durationTextEl = document.getElementById("durationText");
+const cloudStatusEl = document.getElementById("cloudStatus");
 
 const modal = document.getElementById("entryModal");
 const modalTitle = document.getElementById("modalTitle");
@@ -86,9 +87,36 @@ clearEntryBtn.addEventListener("click", async () => {
 async function init() {
     if (SUPABASE_ENABLED) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        await testSupabase();
         await hydrateFromRemote();
+    } else {
+        setCloudStatus("云端：未连接", "error");
     }
     render();
+}
+
+function setCloudStatus(message, level = "") {
+    if (!cloudStatusEl) return;
+    cloudStatusEl.textContent = message;
+    cloudStatusEl.classList.remove("ok", "error");
+    if (level) cloudStatusEl.classList.add(level);
+}
+
+async function testSupabase() {
+    try {
+        const { error } = await supabaseClient
+            .from("fitness_weights")
+            .select("date")
+            .limit(1);
+
+        if (error) {
+            setCloudStatus(`云端连接失败：${error.message}`, "error");
+        } else {
+            setCloudStatus("云端：已连接", "ok");
+        }
+    } catch (err) {
+        setCloudStatus(`云端连接失败：${err.message}`, "error");
+    }
 }
 
 function render() {
@@ -364,14 +392,22 @@ function getDeviceId() {
 async function hydrateFromRemote() {
     if (!supabaseClient) return;
     const deviceId = getDeviceId();
-    const { data: weights } = await supabaseClient
+    const { data: weights, error: weightError } = await supabaseClient
         .from("fitness_weights")
         .select("date, weight")
         .eq("device_id", deviceId);
-    const { data: shifts } = await supabaseClient
+    const { data: shifts, error: shiftError } = await supabaseClient
         .from("fitness_shifts")
         .select("date, days")
         .eq("device_id", deviceId);
+
+    if (weightError) {
+        setCloudStatus(`云端读取失败：${weightError.message}`, "error");
+    }
+
+    if (shiftError) {
+        setCloudStatus(`云端读取失败：${shiftError.message}`, "error");
+    }
 
     if (Array.isArray(weights)) {
         weights.forEach((item) => {
@@ -397,19 +433,31 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
     const deviceId = getDeviceId();
 
     if (forceDelete || !weightValue) {
-        await supabaseClient.from("fitness_weights").delete().eq("device_id", deviceId).eq("date", dateKey);
+        const { error } = await supabaseClient
+            .from("fitness_weights")
+            .delete()
+            .eq("device_id", deviceId)
+            .eq("date", dateKey);
+        if (error) setCloudStatus(`云端写入失败：${error.message}`, "error");
     } else {
-        await supabaseClient
+        const { error } = await supabaseClient
             .from("fitness_weights")
             .upsert({ device_id: deviceId, date: dateKey, weight: Number(weightValue) }, { onConflict: "device_id,date" });
+        if (error) setCloudStatus(`云端写入失败：${error.message}`, "error");
     }
 
     if (forceDelete || !shiftValue) {
-        await supabaseClient.from("fitness_shifts").delete().eq("device_id", deviceId).eq("date", dateKey);
+        const { error } = await supabaseClient
+            .from("fitness_shifts")
+            .delete()
+            .eq("device_id", deviceId)
+            .eq("date", dateKey);
+        if (error) setCloudStatus(`云端写入失败：${error.message}`, "error");
     } else {
-        await supabaseClient
+        const { error } = await supabaseClient
             .from("fitness_shifts")
             .upsert({ device_id: deviceId, date: dateKey, days: shiftValue }, { onConflict: "device_id,date" });
+        if (error) setCloudStatus(`云端写入失败：${error.message}`, "error");
     }
 }
 

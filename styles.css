@@ -39,6 +39,20 @@ body {
     font-size: 0.92rem;
 }
 
+.cloud-status {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.cloud-status.ok {
+    color: #1f7a3a;
+}
+
+.cloud-status.error {
+    color: #c23a2e;
+}
+
 .stats {
     margin-top: 14px;
     display: grid;
