@@ -4,119 +4,118 @@
     --bg1: #f4f1ea;
     --bg2: #f7fbf1;
     --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --train: #e2f4d7;
+    --rest: #faf7f2;
+    --future: #eef2ea;
+    --line: #ded7cc;
+    --accent: #d24b3a;
+    --card: rgba(255, 255, 255, 0.85);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Onest", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(900px 500px at 6% -6%, #ebe2d1 10%, transparent 62%),
+        radial-gradient(900px 500px at 98% 0%, #dbe9cf 8%, transparent 62%),
+        linear-gradient(150deg, var(--bg1), var(--bg2));
+    min-height: 100vh;
+}
+
+.app {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 18px 14px 32px;
+}
+
+.hero p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.stats {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.stat-card {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    box-shadow: 0 14px 30px rgba(27, 25, 22, 0.06);
+    padding: 12px 12px 14px;
+}
+
+.stat-card h2 {
+    margin: 0;
+    font-size: 0.86rem;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.stat-value {
+    margin: 8px 0 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family: "Newsreader", "Onest", serif;
+}
+
+.calendar-wrap {
+    margin-top: 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    overflow: hidden;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.toolbar h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    font-family: "Newsreader", "Onest", serif;
+}
+
+button {
+    border: 1px solid #b0b0b0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #fff;
+    color: #111;
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: #666;
+}
+
+.weekday-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.weekday-row span {
+    padding: 8px 0;
     text-align: center;
-
-    .tag {
-        margin-top: 8px;
-        display: inline-block;
-        font-size: 0.78rem;
-        padding: 2px 6px;
-        border-radius: 999px;
-        border: 1px solid rgba(0, 0, 0, 0.25);
-        background: rgba(255, 255, 255, 0.7);
-    }
-
-    .weight {
-        margin-top: 10px;
-        font-size: 0.72rem;
-        color: var(--muted);
-    }
-
-    .modal {
-        position: fixed;
-        inset: 0;
-        background: rgba(12, 12, 12, 0.45);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        padding: 18px;
-        z-index: 30;
-    }
-
-    .modal.show {
-        display: flex;
-    }
-
-    .modal-card {
-        width: min(420px, 100%);
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid var(--line);
-        box-shadow: 0 20px 45px rgba(20, 20, 20, 0.25);
-        padding: 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .modal-header h3 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 700;
-    }
-
-    .modal-body {
-        display: grid;
-        gap: 10px;
-    }
-
-    .field {
-        display: grid;
-        gap: 6px;
-        font-size: 0.86rem;
-        color: var(--muted);
-    }
-
-    .field input {
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 8px 10px;
-        font-size: 0.95rem;
-    }
-
-    .hint {
-        margin: 0;
-        font-size: 0.78rem;
-        color: var(--muted);
-    }
-
-    .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-    }
-
-    .ghost {
-        background: transparent;
-        border: 1px solid var(--line);
-        color: var(--muted);
-    }
-
-    @media (max-width: 760px) {
-        .day {
-            min-height: 82px;
-            padding: 6px;
-        }
-
-        .toolbar h2 {
-            font-size: 1rem;
-        }
-
-        button {
-            padding: 6px 8px;
-        }
-
-        .stat-value {
-            font-size: 1.05rem;
-        }
-    }
-
     font-size: 0.82rem;
     color: var(--muted);
 }
@@ -171,114 +170,115 @@
 
 .day.today .date-num {
     color: var(--accent);
+}
 
-    .tag {
-        margin-top: 8px;
-        display: inline-block;
-        font-size: 0.78rem;
-        padding: 2px 6px;
-        border-radius: 999px;
-        border: 1px solid rgba(0, 0, 0, 0.25);
-        background: rgba(255, 255, 255, 0.7);
+.tag {
+    margin-top: 8px;
+    display: inline-block;
+    font-size: 0.78rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.weight {
+    margin-top: 10px;
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(12, 12, 12, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 30;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-card {
+    width: min(420px, 100%);
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    box-shadow: 0 20px 45px rgba(20, 20, 20, 0.25);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.modal-body {
+    display: grid;
+    gap: 10px;
+}
+
+.field {
+    display: grid;
+    gap: 6px;
+    font-size: 0.86rem;
+    color: var(--muted);
+}
+
+.field input {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 0.95rem;
+}
+
+.hint {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.ghost {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+}
+
+@media (max-width: 760px) {
+    .day {
+        min-height: 82px;
+        padding: 6px;
     }
 
-    .weight {
-        margin-top: 10px;
-        font-size: 0.72rem;
-        color: var(--muted);
-    }
-
-    .modal {
-        position: fixed;
-        inset: 0;
-        background: rgba(12, 12, 12, 0.45);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        padding: 18px;
-        z-index: 30;
-    }
-
-    .modal.show {
-        display: flex;
-    }
-
-    .modal-card {
-        width: min(420px, 100%);
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid var(--line);
-        box-shadow: 0 20px 45px rgba(20, 20, 20, 0.25);
-        padding: 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .modal-header h3 {
-        margin: 0;
+    .toolbar h2 {
         font-size: 1rem;
-        font-weight: 700;
     }
 
-    .modal-body {
-        display: grid;
-        gap: 10px;
+    button {
+        padding: 6px 8px;
     }
 
-    .field {
-        display: grid;
-        gap: 6px;
-        font-size: 0.86rem;
-        color: var(--muted);
+    .stat-value {
+        font-size: 1.05rem;
     }
-
-    .field input {
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 8px 10px;
-        font-size: 0.95rem;
-    }
-
-    .hint {
-        margin: 0;
-        font-size: 0.78rem;
-        color: var(--muted);
-    }
-
-    .modal-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-    }
-
-    .ghost {
-        background: transparent;
-        border: 1px solid var(--line);
-        color: var(--muted);
-    }
-
-    @media (max-width: 760px) {
-        .day {
-            min-height: 82px;
-            padding: 6px;
-        }
-
-        .toolbar h2 {
-            font-size: 1rem;
-        }
-
-        button {
-            padding: 6px 8px;
-        }
-
-        .stat-value {
-            font-size: 1.05rem;
-        }
-    }
+}
