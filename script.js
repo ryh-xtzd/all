@@ -12,7 +12,7 @@ const SYNC_KEY = "ryh-2026";
 const SUPABASE_URL = "https://rdzmtrwjrnzkjtdxbqeq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_k_rASAwO7pnk4kdRPBLkJw___nqnYof";
 
-const BUILD_ID = "20260428b";
+const BUILD_ID = "20260428c";
 
 let supabaseClient = null;
 let visibleMonth = clampMonth(new Date().getMonth());
@@ -161,15 +161,19 @@ function formatSupabaseError(error) {
 async function testSupabase() {
     try {
         setCloudStatus(`云端：检测中（${BUILD_ID}）…`);
-        const { error } = await supabaseClient
+        const deviceId = getDeviceId();
+        const masked = deviceId.length <= 10 ? deviceId : `${deviceId.slice(0, 4)}…${deviceId.slice(-2)}`;
+        const { data, error } = await supabaseClient
             .from("fitness_weights")
             .select("date")
+            .eq("device_id", deviceId)
             .limit(1);
 
         if (error) {
             setCloudStatus(`云端连接失败：${formatSupabaseError(error)}`, "error");
         } else {
-            setCloudStatus("云端：已连接", "ok");
+            const hasAny = Array.isArray(data) && data.length > 0;
+            setCloudStatus(`云端：已连接（同步=${masked}${hasAny ? "，已有数据" : ""}）`, "ok");
         }
     } catch (err) {
         setCloudStatus(`云端连接失败：${formatErr(err)}`, "error");
@@ -449,14 +453,32 @@ function getDeviceId() {
 async function hydrateFromRemote() {
     if (!supabaseClient) return;
     const deviceId = getDeviceId();
-    const { data: weights, error: weightError } = await supabaseClient
-        .from("fitness_weights")
-        .select("date, weight")
-        .eq("device_id", deviceId);
-    const { data: shifts, error: shiftError } = await supabaseClient
-        .from("fitness_shifts")
-        .select("date, days")
-        .eq("device_id", deviceId);
+    let weights = null;
+    let shifts = null;
+    let weightError = null;
+    let shiftError = null;
+
+    try {
+        const res = await supabaseClient
+            .from("fitness_weights")
+            .select("date, weight")
+            .eq("device_id", deviceId);
+        weights = res.data;
+        weightError = res.error;
+    } catch (err) {
+        weightError = { message: formatErr(err) };
+    }
+
+    try {
+        const res = await supabaseClient
+            .from("fitness_shifts")
+            .select("date, days")
+            .eq("device_id", deviceId);
+        shifts = res.data;
+        shiftError = res.error;
+    } catch (err) {
+        shiftError = { message: formatErr(err) };
+    }
 
     if (weightError) {
         setCloudStatus(`云端读取失败：${formatSupabaseError(weightError)}`, "error");
@@ -489,32 +511,72 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
     if (!supabaseClient) return;
     const deviceId = getDeviceId();
 
+    let hadError = false;
+
     if (forceDelete || !weightValue) {
-        const { error } = await supabaseClient
-            .from("fitness_weights")
-            .delete()
-            .eq("device_id", deviceId)
-            .eq("date", dateKey);
-        if (error) setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
+        try {
+            const { error } = await supabaseClient
+                .from("fitness_weights")
+                .delete()
+                .eq("device_id", deviceId)
+                .eq("date", dateKey);
+            if (error) {
+                hadError = true;
+                setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
+            }
+        } catch (err) {
+            hadError = true;
+            setCloudStatus(`云端写入失败：${formatErr(err)}`, "error");
+        }
     } else {
-        const { error } = await supabaseClient
-            .from("fitness_weights")
-            .upsert({ device_id: deviceId, date: dateKey, weight: Number(weightValue) }, { onConflict: "device_id,date" });
-        if (error) setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
+        try {
+            const { error } = await supabaseClient
+                .from("fitness_weights")
+                .upsert({ device_id: deviceId, date: dateKey, weight: Number(weightValue) }, { onConflict: "device_id,date" })
+                .select("date");
+            if (error) {
+                hadError = true;
+                setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
+            }
+        } catch (err) {
+            hadError = true;
+            setCloudStatus(`云端写入失败：${formatErr(err)}`, "error");
+        }
     }
 
     if (forceDelete || !shiftValue) {
-        const { error } = await supabaseClient
-            .from("fitness_shifts")
-            .delete()
-            .eq("device_id", deviceId)
-            .eq("date", dateKey);
-        if (error) setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
+        try {
+            const { error } = await supabaseClient
+                .from("fitness_shifts")
+                .delete()
+                .eq("device_id", deviceId)
+                .eq("date", dateKey);
+            if (error) {
+                hadError = true;
+                setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
+            }
+        } catch (err) {
+            hadError = true;
+            setCloudStatus(`云端写入失败：${formatErr(err)}`, "error");
+        }
     } else {
-        const { error } = await supabaseClient
-            .from("fitness_shifts")
-            .upsert({ device_id: deviceId, date: dateKey, days: shiftValue }, { onConflict: "device_id,date" });
-        if (error) setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
+        try {
+            const { error } = await supabaseClient
+                .from("fitness_shifts")
+                .upsert({ device_id: deviceId, date: dateKey, days: shiftValue }, { onConflict: "device_id,date" })
+                .select("date");
+            if (error) {
+                hadError = true;
+                setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
+            }
+        } catch (err) {
+            hadError = true;
+            setCloudStatus(`云端写入失败：${formatErr(err)}`, "error");
+        }
+    }
+
+    if (!hadError) {
+        setCloudStatus(`云端：已同步（${BUILD_ID}）`, "ok");
     }
 }
 
