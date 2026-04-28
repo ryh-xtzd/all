@@ -12,8 +12,6 @@ const SYNC_KEY = "ryh-2026";
 const SUPABASE_URL = "https://rdzmtrwjrnzkjtdxbqeq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_k_rASAwO7pnk4kdRPBLkJw___nqnYof";
 
-const BUILD_ID = "20260428c";
-
 let supabaseClient = null;
 let visibleMonth = clampMonth(new Date().getMonth());
 let weightMap = loadMap(WEIGHT_STORAGE_KEY);
@@ -86,11 +84,9 @@ clearEntryBtn.addEventListener("click", async () => {
 });
 
 async function init() {
-    setCloudStatus(`云端：初始化中（${BUILD_ID}）`);
     if (!window.supabase) {
         const loaded = await loadSupabaseSdk();
         if (!loaded) {
-            setCloudStatus("云端：未连接（SDK加载失败）", "error");
             render();
             return;
         }
@@ -100,15 +96,13 @@ async function init() {
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (err) {
-            setCloudStatus(`云端：未连接（createClient失败：${formatErr(err)}）`, "error");
             render();
             return;
         }
 
-        await testSupabase();
         await hydrateFromRemote();
     } else {
-        setCloudStatus("云端：未连接（配置缺失或SDK未就绪）", "error");
+        // Supabase not configured or SDK not ready; fall back to localStorage only.
     }
     render();
 }
@@ -156,28 +150,6 @@ function formatSupabaseError(error) {
     if (error.hint) parts.push(`hint=${error.hint}`);
     if (error.status) parts.push(`status=${error.status}`);
     return parts.join(" | ") || String(error);
-}
-
-async function testSupabase() {
-    try {
-        setCloudStatus(`云端：检测中（${BUILD_ID}）…`);
-        const deviceId = getDeviceId();
-        const masked = deviceId.length <= 10 ? deviceId : `${deviceId.slice(0, 4)}…${deviceId.slice(-2)}`;
-        const { data, error } = await supabaseClient
-            .from("fitness_weights")
-            .select("date")
-            .eq("device_id", deviceId)
-            .limit(1);
-
-        if (error) {
-            setCloudStatus(`云端连接失败：${formatSupabaseError(error)}`, "error");
-        } else {
-            const hasAny = Array.isArray(data) && data.length > 0;
-            setCloudStatus(`云端：已连接（同步=${masked}${hasAny ? "，已有数据" : ""}）`, "ok");
-        }
-    } catch (err) {
-        setCloudStatus(`云端连接失败：${formatErr(err)}`, "error");
-    }
 }
 
 function render() {
@@ -481,11 +453,11 @@ async function hydrateFromRemote() {
     }
 
     if (weightError) {
-        setCloudStatus(`云端读取失败：${formatSupabaseError(weightError)}`, "error");
+        // Intentionally silent in UI.
     }
 
     if (shiftError) {
-        setCloudStatus(`云端读取失败：${formatSupabaseError(shiftError)}`, "error");
+        // Intentionally silent in UI.
     }
 
     if (Array.isArray(weights)) {
@@ -522,11 +494,9 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .eq("date", dateKey);
             if (error) {
                 hadError = true;
-                setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
             }
         } catch (err) {
             hadError = true;
-            setCloudStatus(`云端写入失败：${formatErr(err)}`, "error");
         }
     } else {
         try {
@@ -536,11 +506,9 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .select("date");
             if (error) {
                 hadError = true;
-                setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
             }
         } catch (err) {
             hadError = true;
-            setCloudStatus(`云端写入失败：${formatErr(err)}`, "error");
         }
     }
 
@@ -553,11 +521,9 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .eq("date", dateKey);
             if (error) {
                 hadError = true;
-                setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
             }
         } catch (err) {
             hadError = true;
-            setCloudStatus(`云端写入失败：${formatErr(err)}`, "error");
         }
     } else {
         try {
@@ -567,17 +533,13 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .select("date");
             if (error) {
                 hadError = true;
-                setCloudStatus(`云端写入失败：${formatSupabaseError(error)}`, "error");
             }
         } catch (err) {
             hadError = true;
-            setCloudStatus(`云端写入失败：${formatErr(err)}`, "error");
         }
     }
 
-    if (!hadError) {
-        setCloudStatus(`云端：已同步（${BUILD_ID}）`, "ok");
-    }
+    // Intentionally silent in UI. If needed, we can add a subtle indicator later.
 }
 
 init();
