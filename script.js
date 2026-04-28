@@ -85,6 +85,15 @@ clearEntryBtn.addEventListener("click", async () => {
 });
 
 async function init() {
+    if (!window.supabase) {
+        const loaded = await loadSupabaseSdk();
+        if (!loaded) {
+            setCloudStatus("云端：未连接（SDK加载失败）", "error");
+            render();
+            return;
+        }
+    }
+
     if (SUPABASE_ENABLED) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         await testSupabase();
@@ -93,6 +102,18 @@ async function init() {
         setCloudStatus("云端：未连接", "error");
     }
     render();
+}
+
+function loadSupabaseSdk() {
+    return new Promise((resolve) => {
+        if (window.supabase) return resolve(true);
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/@supabase/supabase-js@2";
+        script.async = true;
+        script.onload = () => resolve(Boolean(window.supabase));
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+    });
 }
 
 function setCloudStatus(message, level = "") {
