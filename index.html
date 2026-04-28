@@ -11,32 +11,18 @@
 <body>
     <main class="app">
         <header class="hero">
-            <h1>2026 健身日历</h1>
             <p>起始日期：2026-03-13，周期：练三休一（背/胸/腿/休）</p>
         </header>
 
         <section class="stats" aria-label="统计信息">
             <article class="stat-card">
-                <h2>实际练习天数</h2>
-                <p id="actualCount" class="stat-value">0 天</p>
-                <small>点击训练日可切换“已完成”</small>
+                <h2>天数</h2>
+                <p id="trainDays" class="stat-value">0 天</p>
             </article>
             <article class="stat-card">
-                <h2>按计划应练天数</h2>
-                <p id="plannedCount" class="stat-value">0 天</p>
-                <small>从起始日到今天（含休息）</small>
-            </article>
-            <article class="stat-card">
-                <h2>已坚持时长</h2>
+                <h2>时长</h2>
                 <p id="durationText" class="stat-value">0 个月 0 天</p>
-                <small>包含休息日</small>
             </article>
-        </section>
-
-        <section class="legend" aria-label="颜色说明">
-            <span><i class="dot train"></i>训练日（浅绿）</span>
-            <span><i class="dot rest"></i>休息日（白）</span>
-            <span><i class="dot future"></i>未来日期（黑）</span>
         </section>
 
         <section class="calendar-wrap" aria-label="日历">
@@ -54,6 +40,31 @@
         </section>
     </main>
 
+    <div id="entryModal" class="modal" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <header class="modal-header">
+                <h3 id="modalTitle">记录</h3>
+                <button id="closeModal" class="ghost" type="button">关闭</button>
+            </header>
+            <div class="modal-body">
+                <label class="field">
+                    <span>体重（kg）</span>
+                    <input id="weightInput" type="number" inputmode="decimal" placeholder="例如 68.5" />
+                </label>
+                <label class="field">
+                    <span>从这一天顺延（天）</span>
+                    <input id="shiftInput" type="number" inputmode="numeric" min="0" placeholder="例如 1" />
+                </label>
+                <p class="hint">顺延会把这一天变成休息日，并整体推后训练计划。</p>
+            </div>
+            <footer class="modal-footer">
+                <button id="clearEntry" class="ghost" type="button">清空</button>
+                <button id="saveEntry" type="button">保存</button>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 
