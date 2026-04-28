@@ -6,6 +6,7 @@ const WORKOUT_TYPES = ["背", "胸", "腿"];
 const WEIGHT_STORAGE_KEY = "fitness-weight-map-v1";
 const SHIFT_STORAGE_KEY = "fitness-shift-map-v1";
 const DEVICE_STORAGE_KEY = "fitness-device-id-v1";
+const SYNC_KEY = "ryh-2026";
 
 // Optional: enable Supabase by setting URL/ANON key and creating fitness_weights/fitness_shifts tables.
 const SUPABASE_URL = "https://rdzmtrwjrnzkjtdxbqeq.supabase.co";
@@ -349,6 +350,9 @@ function closeModal() {
 }
 
 function getDeviceId() {
+    if (SYNC_KEY && SYNC_KEY.trim()) {
+        return SYNC_KEY.trim();
+    }
     let id = localStorage.getItem(DEVICE_STORAGE_KEY);
     if (!id) {
         id = crypto.randomUUID ? crypto.randomUUID() : `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
