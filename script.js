@@ -25,6 +25,7 @@ const calendarGrid = document.getElementById("calendarGrid");
 const trainDaysEl = document.getElementById("trainDays");
 const durationTextEl = document.getElementById("durationText");
 const cloudStatusEl = document.getElementById("cloudStatus");
+const todayTextEl = document.getElementById("todayText");
 
 const modal = document.getElementById("entryModal");
 const modalTitle = document.getElementById("modalTitle");
@@ -173,6 +174,9 @@ function formatSupabaseError(error) {
 }
 
 function render() {
+    if (todayTextEl) {
+        todayTextEl.textContent = `今日：${toKey(new Date())}`;
+    }
     monthTitle.textContent = `${YEAR}年${visibleMonth + 1}月`;
     renderCalendar(YEAR, visibleMonth);
     renderStats();
@@ -241,7 +245,7 @@ function createDayCell(rawDate) {
     if (weightValue) {
         const weight = document.createElement("div");
         weight.className = "weight";
-        weight.textContent = `${weightValue} kg`;
+        weight.textContent = `${weightValue}kg`;
         day.appendChild(weight);
     }
 
