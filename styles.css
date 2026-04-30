@@ -133,6 +133,10 @@ button:hover {
     border-color: #666;
 }
 
+.hidden {
+    display: none;
+}
+
 .weekday-row {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -207,6 +211,80 @@ button:hover {
     border-radius: 999px;
     border: 1px solid rgba(0, 0, 0, 0.25);
     background: rgba(255, 255, 255, 0.7);
+}
+
+.footer-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+}
+
+.notes-view {
+    margin-top: 14px;
+}
+
+.notes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.notes-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    font-family: "Newsreader", "Onest", serif;
+}
+
+.notes-groups {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.notes-card {
+    margin-top: 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--card);
+    box-shadow: 0 14px 30px rgba(27, 25, 22, 0.06);
+    padding: 12px;
+}
+
+.notes-content {
+    color: var(--ink);
+}
+
+.notes-content h3 {
+    margin: 4px 0 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.notes-content h4 {
+    margin: 14px 0 8px;
+    font-size: 0.98rem;
+    font-weight: 700;
+}
+
+.notes-content p {
+    margin: 8px 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.notes-content ol {
+    margin: 6px 0 12px 1.2em;
+    padding: 0;
+    color: var(--ink);
+    font-size: 0.92rem;
+}
+
+.notes-content li {
+    margin: 4px 0;
 }
 
 .weight {

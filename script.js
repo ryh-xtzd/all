@@ -2,6 +2,9 @@ const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
 const WORKOUT_TYPES = ["背", "胸", "腿"];
 
+const BUILD_ID = "20260430c";
+const NOTES_MD_FILE = "动作.md";
+
 
 const WEIGHT_STORAGE_KEY = "fitness-weight-map-v1";
 const SHIFT_STORAGE_KEY = "fitness-shift-map-v1";
@@ -27,6 +30,13 @@ const durationTextEl = document.getElementById("durationText");
 const cloudStatusEl = document.getElementById("cloudStatus");
 const todayTextEl = document.getElementById("todayText");
 
+const calendarViewEl = document.getElementById("calendarView");
+const notesViewEl = document.getElementById("notesView");
+const openNotesBtn = document.getElementById("openNotesBtn");
+const backToCalendarBtn = document.getElementById("backToCalendarBtn");
+const notesContentEl = document.getElementById("notesContent");
+const notesGroupButtons = Array.from(document.querySelectorAll("[data-notes-group]"));
+
 const modal = document.getElementById("entryModal");
 const modalTitle = document.getElementById("modalTitle");
 const weightInput = document.getElementById("weightInput");
@@ -37,6 +47,31 @@ const customLabelInput = document.getElementById("customLabelInput");
 const closeModalBtn = document.getElementById("closeModal");
 const saveEntryBtn = document.getElementById("saveEntry");
 const clearEntryBtn = document.getElementById("clearEntry");
+
+let notesMarkdownText = "";
+let notesMarkdownPromise = null;
+
+if (openNotesBtn) {
+    openNotesBtn.addEventListener("click", () => {
+        showNotesView();
+        setNotesPlaceholder("请选择部位");
+    });
+}
+
+if (backToCalendarBtn) {
+    backToCalendarBtn.addEventListener("click", () => {
+        showCalendarView();
+    });
+}
+
+if (notesGroupButtons.length > 0) {
+    notesGroupButtons.forEach((btn) => {
+        btn.addEventListener("click", async () => {
+            const group = btn.getAttribute("data-notes-group") || "";
+            await showNotesGroup(group);
+        });
+    });
+}
 
 if (planSelect) {
     planSelect.addEventListener("change", syncPlanFieldVisibility);
@@ -180,6 +215,184 @@ function render() {
     monthTitle.textContent = `${YEAR}年${visibleMonth + 1}月`;
     renderCalendar(YEAR, visibleMonth);
     renderStats();
+}
+
+function showNotesView() {
+    if (calendarViewEl) calendarViewEl.classList.add("hidden");
+    if (notesViewEl) notesViewEl.classList.remove("hidden");
+    window.scrollTo(0, 0);
+}
+
+function showCalendarView() {
+    if (notesViewEl) notesViewEl.classList.add("hidden");
+    if (calendarViewEl) calendarViewEl.classList.remove("hidden");
+    window.scrollTo(0, 0);
+}
+
+function setNotesPlaceholder(text) {
+    if (!notesContentEl) return;
+    notesContentEl.textContent = text;
+}
+
+async function showNotesGroup(group) {
+    if (!notesContentEl) return;
+
+    const normalizedGroup = String(group || "").trim();
+    if (!normalizedGroup) {
+        setNotesPlaceholder("请选择部位");
+        return;
+    }
+
+    setNotesPlaceholder("加载中...");
+
+    let mdText = "";
+    try {
+        mdText = await loadNotesMarkdown();
+    } catch (_) {
+        setNotesPlaceholder("加载失败，请稍后重试");
+        return;
+    }
+
+    const section = getNotesGroupMarkdown(mdText, normalizedGroup);
+    if (!section) {
+        setNotesPlaceholder("未找到对应内容");
+        return;
+    }
+
+    renderSimpleMarkdown(notesContentEl, section);
+}
+
+function normalizeNewlines(text) {
+    return String(text || "").replace(/\r\n?/g, "\n");
+}
+
+async function loadNotesMarkdown() {
+    if (notesMarkdownText) return notesMarkdownText;
+    if (notesMarkdownPromise) return notesMarkdownPromise;
+
+    const url = `${encodeURI(NOTES_MD_FILE)}?v=${encodeURIComponent(BUILD_ID)}`;
+    notesMarkdownPromise = fetch(url)
+        .then((res) => {
+            if (!res.ok) {
+                throw new Error(`fetch failed: ${res.status}`);
+            }
+            return res.text();
+        })
+        .then((text) => {
+            notesMarkdownText = normalizeNewlines(text);
+            return notesMarkdownText;
+        })
+        .finally(() => {
+            // Keep the resolved text, but avoid holding a settled promise.
+            notesMarkdownPromise = null;
+        });
+
+    return notesMarkdownPromise;
+}
+
+function sliceTopLevelSection(mdText, title) {
+    const text = normalizeNewlines(mdText);
+    const lines = text.split("\n");
+    const header = `# ${title}`;
+    let start = -1;
+
+    for (let i = 0; i < lines.length; i += 1) {
+        if (lines[i].trim() === header) {
+            start = i;
+            break;
+        }
+    }
+
+    if (start < 0) return "";
+
+    let end = lines.length;
+    for (let i = start + 1; i < lines.length; i += 1) {
+        if (lines[i].startsWith("# ")) {
+            end = i;
+            break;
+        }
+    }
+
+    return lines.slice(start, end).join("\n").trim();
+}
+
+function getNotesGroupMarkdown(mdText, group) {
+    switch (group) {
+        case "back":
+            return sliceTopLevelSection(mdText, "背");
+        case "chest":
+            return sliceTopLevelSection(mdText, "胸");
+        case "leg":
+            return sliceTopLevelSection(mdText, "腿");
+        case "shoulder": {
+            const parts = [
+                sliceTopLevelSection(mdText, "肩后束"),
+                sliceTopLevelSection(mdText, "肩前束"),
+                sliceTopLevelSection(mdText, "肩中束"),
+            ].filter(Boolean);
+            return parts.join("\n\n");
+        }
+        default:
+            return "";
+    }
+}
+
+function renderSimpleMarkdown(containerEl, mdText) {
+    if (!containerEl) return;
+    containerEl.replaceChildren();
+
+    const lines = normalizeNewlines(mdText).split("\n");
+    let currentOl = null;
+
+    const flushOl = () => {
+        if (currentOl) {
+            containerEl.appendChild(currentOl);
+            currentOl = null;
+        }
+    };
+
+    for (let i = 0; i < lines.length; i += 1) {
+        const rawLine = lines[i];
+        const line = rawLine.trimEnd();
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+            flushOl();
+            continue;
+        }
+
+        if (trimmed.startsWith("# ")) {
+            flushOl();
+            const h = document.createElement("h3");
+            h.textContent = trimmed.slice(2).trim();
+            containerEl.appendChild(h);
+            continue;
+        }
+
+        if (trimmed.startsWith("## ")) {
+            flushOl();
+            const h = document.createElement("h4");
+            h.textContent = trimmed.slice(3).trim();
+            containerEl.appendChild(h);
+            continue;
+        }
+
+        const orderedMatch = trimmed.match(/^\d+\.\s+(.*)$/);
+        if (orderedMatch) {
+            if (!currentOl) currentOl = document.createElement("ol");
+            const li = document.createElement("li");
+            li.textContent = orderedMatch[1].trim();
+            currentOl.appendChild(li);
+            continue;
+        }
+
+        flushOl();
+        const p = document.createElement("p");
+        p.textContent = trimmed;
+        containerEl.appendChild(p);
+    }
+
+    flushOl();
 }
 
 function renderCalendar(year, month) {

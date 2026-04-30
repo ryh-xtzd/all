@@ -5,41 +5,65 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>2026 健身日历</title>
-    <link rel="stylesheet" href="styles.css?v=20260430b" />
+    <link rel="stylesheet" href="styles.css?v=20260430c" />
 </head>
 
 <body>
     <main class="app">
-        <header class="hero">
-            <div class="hero-row">
-                <p>起始日期：2026-03-13</p>
-                <p id="todayText" class="today-text"></p>
-            </div>
-        </header>
+        <div id="calendarView">
+            <header class="hero">
+                <div class="hero-row">
+                    <p>起始日期：2026-03-13</p>
+                    <p id="todayText" class="today-text"></p>
+                </div>
+            </header>
 
-        <section class="stats" aria-label="统计信息">
-            <article class="stat-card">
-                <h2>天数</h2>
-                <p id="trainDays" class="stat-value">0 天</p>
-            </article>
-            <article class="stat-card">
-                <h2>时长</h2>
-                <p id="durationText" class="stat-value">0 个月 0 天</p>
-            </article>
-        </section>
+            <section class="stats" aria-label="统计信息">
+                <article class="stat-card">
+                    <h2>天数</h2>
+                    <p id="trainDays" class="stat-value">0 天</p>
+                </article>
+                <article class="stat-card">
+                    <h2>时长</h2>
+                    <p id="durationText" class="stat-value">0 个月 0 天</p>
+                </article>
+            </section>
 
-        <section class="calendar-wrap" aria-label="日历">
-            <div class="toolbar">
-                <button id="prevMonth" type="button">上一月</button>
-                <h2 id="monthTitle">2026年1月</h2>
-                <button id="nextMonth" type="button">下一月</button>
-            </div>
+            <section class="calendar-wrap" aria-label="日历">
+                <div class="toolbar">
+                    <button id="prevMonth" type="button">上一月</button>
+                    <h2 id="monthTitle">2026年1月</h2>
+                    <button id="nextMonth" type="button">下一月</button>
+                </div>
 
-            <div class="weekday-row" role="row">
-                <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
-            </div>
+                <div class="weekday-row" role="row">
+                    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+                </div>
 
-            <div id="calendarGrid" class="grid" role="grid"></div>
+                <div id="calendarGrid" class="grid" role="grid"></div>
+            </section>
+
+            <section class="footer-actions" aria-label="更多功能">
+                <button id="openNotesBtn" type="button">动作笔记</button>
+            </section>
+        </div>
+
+        <section id="notesView" class="notes-view hidden" aria-label="动作笔记">
+            <header class="notes-header">
+                <button id="backToCalendarBtn" class="ghost" type="button">返回</button>
+                <h2 class="notes-title">动作笔记</h2>
+            </header>
+
+            <section class="notes-groups" aria-label="部位选择">
+                <button type="button" data-notes-group="back">背</button>
+                <button type="button" data-notes-group="shoulder">肩</button>
+                <button type="button" data-notes-group="chest">胸</button>
+                <button type="button" data-notes-group="leg">腿</button>
+            </section>
+
+            <section class="notes-card" aria-label="动作要求">
+                <div id="notesContent" class="notes-content">请选择部位</div>
+            </section>
         </section>
     </main>
 
@@ -82,7 +106,7 @@
     </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="script.js?v=20260430b"></script>
+    <script src="script.js?v=20260430c"></script>
 </body>
 
 </html>
