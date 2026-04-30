@@ -5,6 +5,7 @@ const WORKOUT_TYPES = ["背", "胸", "腿"];
 
 const WEIGHT_STORAGE_KEY = "fitness-weight-map-v1";
 const SHIFT_STORAGE_KEY = "fitness-shift-map-v1";
+const OVERRIDE_STORAGE_KEY = "fitness-override-map-v1";
 const DEVICE_STORAGE_KEY = "fitness-device-id-v1";
 const SYNC_KEY = "ryh-2026";
 
@@ -16,6 +17,7 @@ let supabaseClient = null;
 let visibleMonth = clampMonth(new Date().getMonth());
 let weightMap = loadMap(WEIGHT_STORAGE_KEY);
 let shiftMap = loadMap(SHIFT_STORAGE_KEY);
+let overrideMap = loadMap(OVERRIDE_STORAGE_KEY);
 let selectedDateKey = "";
 
 const monthTitle = document.getElementById("monthTitle");
@@ -28,9 +30,16 @@ const modal = document.getElementById("entryModal");
 const modalTitle = document.getElementById("modalTitle");
 const weightInput = document.getElementById("weightInput");
 const shiftInput = document.getElementById("shiftInput");
+const planSelect = document.getElementById("planSelect");
+const customLabelField = document.getElementById("customLabelField");
+const customLabelInput = document.getElementById("customLabelInput");
 const closeModalBtn = document.getElementById("closeModal");
 const saveEntryBtn = document.getElementById("saveEntry");
 const clearEntryBtn = document.getElementById("clearEntry");
+
+if (planSelect) {
+    planSelect.addEventListener("change", syncPlanFieldVisibility);
+}
 
 document.getElementById("prevMonth").addEventListener("click", () => {
     visibleMonth = Math.max(0, visibleMonth - 1);
@@ -51,6 +60,8 @@ saveEntryBtn.addEventListener("click", async () => {
     if (!selectedDateKey) return;
     const weightValue = (weightInput.value || "").trim();
     const shiftValue = Math.max(0, Number.parseInt(shiftInput.value || "0", 10) || 0);
+    const planMode = planSelect?.value || "plan";
+    const customLabel = (customLabelInput?.value || "").trim();
 
     if (weightValue) {
         weightMap[selectedDateKey] = weightValue;
@@ -64,10 +75,17 @@ saveEntryBtn.addEventListener("click", async () => {
         delete shiftMap[selectedDateKey];
     }
 
+    const planned = getPlannedWorkoutInfo(fromKey(selectedDateKey));
+    const autoShiftNextKey = applyOverrideForKey(selectedDateKey, planMode, customLabel, planned);
+
     saveMap(WEIGHT_STORAGE_KEY, weightMap);
     saveMap(SHIFT_STORAGE_KEY, shiftMap);
+    saveMap(OVERRIDE_STORAGE_KEY, overrideMap);
 
     await persistEntry(selectedDateKey, weightValue, shiftValue);
+    if (autoShiftNextKey) {
+        await persistEntry(autoShiftNextKey, "", getShiftDaysForKey(autoShiftNextKey));
+    }
     closeModal();
     render();
 });
@@ -76,8 +94,10 @@ clearEntryBtn.addEventListener("click", async () => {
     if (!selectedDateKey) return;
     delete weightMap[selectedDateKey];
     delete shiftMap[selectedDateKey];
+    delete overrideMap[selectedDateKey];
     saveMap(WEIGHT_STORAGE_KEY, weightMap);
     saveMap(SHIFT_STORAGE_KEY, shiftMap);
+    saveMap(OVERRIDE_STORAGE_KEY, overrideMap);
     await persistEntry(selectedDateKey, "", 0, true);
     closeModal();
     render();
@@ -233,6 +253,13 @@ function createDayCell(rawDate) {
 }
 
 function getWorkoutInfo(date) {
+    const key = toKey(date);
+    const override = getOverrideForKey(key);
+    if (override) return override;
+    return getPlannedWorkoutInfo(date);
+}
+
+function getPlannedWorkoutInfo(date) {
     const d = toDateOnly(date);
     if (d < START_DATE) {
         return { kind: "rest", label: "未开始" };
@@ -250,6 +277,44 @@ function getWorkoutInfo(date) {
     }
 
     return { kind: "train", label: WORKOUT_TYPES[idx] };
+}
+
+function getOverrideForKey(key) {
+    const raw = overrideMap[key];
+    if (!raw || typeof raw !== "object") return null;
+    const kind = raw.kind === "train" ? "train" : raw.kind === "rest" ? "rest" : "";
+    if (!kind) return null;
+    const label = typeof raw.label === "string" && raw.label.trim()
+        ? raw.label.trim()
+        : kind === "train"
+            ? "训练"
+            : "休息";
+    return { kind, label };
+}
+
+function applyOverrideForKey(dateKey, planMode, customLabel, plannedInfo) {
+    if (planMode === "plan") {
+        delete overrideMap[dateKey];
+        return "";
+    }
+
+    if (planMode === "rest") {
+        overrideMap[dateKey] = { kind: "rest", label: "休息" };
+        return "";
+    }
+
+    if (planMode === "train") {
+        const label = customLabel || (plannedInfo?.kind === "train" ? plannedInfo.label : "训练");
+        overrideMap[dateKey] = { kind: "train", label };
+
+        if (plannedInfo?.kind === "rest") {
+            const nextKey = toKey(addDays(fromKey(dateKey), 1));
+            shiftMap[nextKey] = String(Math.max(getShiftDaysForKey(nextKey), 1));
+            return nextKey;
+        }
+    }
+
+    return "";
 }
 
 function renderStats() {
@@ -398,6 +463,16 @@ function openModal(dateKey) {
     modalTitle.textContent = dateKey;
     weightInput.value = weightMap[dateKey] || "";
     shiftInput.value = shiftMap[dateKey] || "";
+
+    const override = getOverrideForKey(dateKey);
+    if (planSelect) {
+        planSelect.value = override ? override.kind : "plan";
+    }
+    if (customLabelInput) {
+        customLabelInput.value = override && override.kind === "train" ? override.label : "";
+    }
+    syncPlanFieldVisibility();
+
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
 }
@@ -408,6 +483,15 @@ function closeModal() {
     selectedDateKey = "";
     weightInput.value = "";
     shiftInput.value = "";
+    if (planSelect) planSelect.value = "plan";
+    if (customLabelInput) customLabelInput.value = "";
+    syncPlanFieldVisibility();
+}
+
+function syncPlanFieldVisibility() {
+    if (!planSelect || !customLabelField) return;
+    const showLabel = planSelect.value === "train";
+    customLabelField.classList.toggle("hidden", !showLabel);
 }
 
 function getDeviceId() {
@@ -427,8 +511,10 @@ async function hydrateFromRemote() {
     const deviceId = getDeviceId();
     let weights = null;
     let shifts = null;
+    let overrides = null;
     let weightError = null;
     let shiftError = null;
+    let overrideError = null;
 
     try {
         const res = await supabaseClient
@@ -452,11 +538,26 @@ async function hydrateFromRemote() {
         shiftError = { message: formatErr(err) };
     }
 
+    try {
+        const res = await supabaseClient
+            .from("fitness_overrides")
+            .select("date, kind, label")
+            .eq("device_id", deviceId);
+        overrides = res.data;
+        overrideError = res.error;
+    } catch (err) {
+        overrideError = { message: formatErr(err) };
+    }
+
     if (weightError) {
         // Intentionally silent in UI.
     }
 
     if (shiftError) {
+        // Intentionally silent in UI.
+    }
+
+    if (overrideError) {
         // Intentionally silent in UI.
     }
 
@@ -476,6 +577,21 @@ async function hydrateFromRemote() {
             }
         });
         saveMap(SHIFT_STORAGE_KEY, shiftMap);
+    }
+
+    if (Array.isArray(overrides)) {
+        overrides.forEach((item) => {
+            const date = item?.date;
+            const kind = item?.kind === "train" ? "train" : item?.kind === "rest" ? "rest" : "";
+            if (!date || !kind) return;
+            const label = typeof item?.label === "string" && item.label.trim()
+                ? item.label.trim()
+                : kind === "train"
+                    ? "训练"
+                    : "休息";
+            overrideMap[date] = { kind, label };
+        });
+        saveMap(OVERRIDE_STORAGE_KEY, overrideMap);
     }
 }
 
@@ -530,6 +646,40 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
             const { error } = await supabaseClient
                 .from("fitness_shifts")
                 .upsert({ device_id: deviceId, date: dateKey, days: shiftValue }, { onConflict: "device_id,date" })
+                .select("date");
+            if (error) {
+                hadError = true;
+            }
+        } catch (err) {
+            hadError = true;
+        }
+    }
+
+    const override = overrideMap[dateKey];
+    const hasOverride = override && typeof override === "object" && (override.kind === "train" || override.kind === "rest");
+    if (forceDelete || !hasOverride) {
+        try {
+            const { error } = await supabaseClient
+                .from("fitness_overrides")
+                .delete()
+                .eq("device_id", deviceId)
+                .eq("date", dateKey);
+            if (error) {
+                hadError = true;
+            }
+        } catch (err) {
+            hadError = true;
+        }
+    } else {
+        try {
+            const label = typeof override.label === "string" && override.label.trim()
+                ? override.label.trim()
+                : override.kind === "train"
+                    ? "训练"
+                    : "休息";
+            const { error } = await supabaseClient
+                .from("fitness_overrides")
+                .upsert({ device_id: deviceId, date: dateKey, kind: override.kind, label }, { onConflict: "device_id,date" })
                 .select("date");
             if (error) {
                 hadError = true;

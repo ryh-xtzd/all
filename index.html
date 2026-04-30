@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>2026 健身日历</title>
-    <link rel="stylesheet" href="styles.css?v=20260428d" />
+    <link rel="stylesheet" href="styles.css?v=20260430a" />
 </head>
 
 <body>
@@ -48,6 +48,20 @@
             </header>
             <div class="modal-body">
                 <label class="field">
+                    <span>这一天安排</span>
+                    <select id="planSelect">
+                        <option value="plan">按计划</option>
+                        <option value="train">训练</option>
+                        <option value="rest">休息</option>
+                    </select>
+                </label>
+
+                <label id="customLabelField" class="field hidden">
+                    <span>训练项目（可自定义）</span>
+                    <input id="customLabelInput" type="text" inputmode="text" placeholder="例如 肩 / 有氧" />
+                </label>
+
+                <label class="field">
                     <span>体重（kg）</span>
                     <input id="weightInput" type="number" inputmode="decimal" placeholder="例如 68.5" />
                 </label>
@@ -55,7 +69,7 @@
                     <span>从这一天顺延（天）</span>
                     <input id="shiftInput" type="number" inputmode="numeric" min="0" placeholder="例如 1" />
                 </label>
-                <p class="hint">顺延会把这一天变成休息日，并整体推后训练计划。</p>
+                <p class="hint">把休息日改成训练，会自动把次日顺延 1 天。</p>
             </div>
             <footer class="modal-footer">
                 <button id="clearEntry" class="ghost" type="button">清空</button>
@@ -65,7 +79,7 @@
     </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="script.js?v=20260428d"></script>
+    <script src="script.js?v=20260430a"></script>
 </body>
 
 </html>

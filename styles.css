@@ -253,11 +253,18 @@ button:hover {
     color: var(--muted);
 }
 
-.field input {
+.field input,
+.field select {
     border: 1px solid var(--line);
     border-radius: 10px;
     padding: 8px 10px;
     font-size: 0.95rem;
+    background: #fff;
+    color: var(--ink);
+}
+
+.field.hidden {
+    display: none;
 }
 
 .hint {
