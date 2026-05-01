@@ -2,7 +2,7 @@ const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
 const WORKOUT_TYPES = ["背", "胸", "腿"];
 
-const BUILD_ID = "20260430c";
+const BUILD_ID = "20260501a";
 const NOTES_MD_FILE = "动作.md";
 
 
@@ -140,9 +140,12 @@ clearEntryBtn.addEventListener("click", async () => {
 });
 
 async function init() {
+    setCloudStatus("云端：未启用");
+
     if (!window.supabase) {
         const loaded = await loadSupabaseSdk();
         if (!loaded) {
+            setCloudStatus("云端：未加载", "error");
             render();
             return;
         }
@@ -152,13 +155,17 @@ async function init() {
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (err) {
+            setCloudStatus("云端：初始化失败", "error");
             render();
             return;
         }
 
-        await hydrateFromRemote();
+        setCloudStatus("云端：连接中...");
+        const ok = await hydrateFromRemote();
+        setCloudStatus(ok ? "云端：已连接" : "云端：读取失败", ok ? "ok" : "error");
     } else {
         // Supabase not configured or SDK not ready; fall back to localStorage only.
+        setCloudStatus("云端：未启用");
     }
     render();
 }
@@ -778,6 +785,8 @@ async function hydrateFromRemote() {
         // Intentionally silent in UI.
     }
 
+    const hadError = Boolean(weightError || shiftError || overrideError);
+
     if (Array.isArray(weights)) {
         weights.forEach((item) => {
             if (item?.date && item?.weight != null) {
@@ -810,6 +819,8 @@ async function hydrateFromRemote() {
         });
         saveMap(OVERRIDE_STORAGE_KEY, overrideMap);
     }
+
+    return !hadError;
 }
 
 async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = false) {
@@ -907,6 +918,9 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
     }
 
     // Intentionally silent in UI. If needed, we can add a subtle indicator later.
+
+    setCloudStatus(hadError ? "云端：同步失败" : "云端：已同步", hadError ? "error" : "ok");
+    return !hadError;
 }
 
 init();
