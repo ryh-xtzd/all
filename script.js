@@ -2,7 +2,7 @@ const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
 const WORKOUT_TYPES = ["背", "胸", "腿"];
 
-const BUILD_ID = "20260502a";
+const BUILD_ID = "20260502b";
 const NOTES_MD_FILE = "动作.md";
 
 
@@ -950,12 +950,11 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
 
     // Intentionally silent in UI. If needed, we can add a subtle indicator later.
 
-    setCloudStatus(
-        hadError
-            ? `云端：同步失败${lastErrorText ? `（${shorten(lastErrorText)}）` : ""}`
-            : "云端：已同步",
-        hadError ? "error" : "ok"
-    );
+    if (hadError) {
+        setCloudStatus(`云端：同步失败${lastErrorText ? `（${shorten(lastErrorText)}）` : ""}`, "error");
+    } else {
+        setCloudStatus("云端：已连接", "ok");
+    }
     return !hadError;
 }
 
