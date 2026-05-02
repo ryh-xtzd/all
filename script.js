@@ -2,7 +2,7 @@ const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
 const WORKOUT_TYPES = ["背", "胸", "腿"];
 
-const BUILD_ID = "20260502c";
+const BUILD_ID = "20260502d";
 const NOTES_MD_FILE = "动作.md";
 
 
