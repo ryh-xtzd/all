@@ -2,7 +2,7 @@ const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
 const WORKOUT_TYPES = ["背", "胸", "腿"];
 
-const BUILD_ID = "20260501a";
+const BUILD_ID = "20260502a";
 const NOTES_MD_FILE = "动作.md";
 
 
@@ -191,6 +191,13 @@ function setCloudStatus(message, level = "") {
     cloudStatusEl.textContent = message;
     cloudStatusEl.classList.remove("ok", "error");
     if (level) cloudStatusEl.classList.add(level);
+}
+
+function shorten(text, maxLen = 120) {
+    const s = String(text || "").trim();
+    if (!s) return "";
+    if (s.length <= maxLen) return s;
+    return `${s.slice(0, Math.max(0, maxLen - 1))}…`;
 }
 
 function formatErr(err) {
@@ -739,6 +746,7 @@ async function hydrateFromRemote() {
     let weightError = null;
     let shiftError = null;
     let overrideError = null;
+    let lastErrorText = "";
 
     try {
         const res = await supabaseClient
@@ -747,8 +755,10 @@ async function hydrateFromRemote() {
             .eq("device_id", deviceId);
         weights = res.data;
         weightError = res.error;
+        if (res.error && !lastErrorText) lastErrorText = formatSupabaseError(res.error);
     } catch (err) {
         weightError = { message: formatErr(err) };
+        if (!lastErrorText) lastErrorText = formatErr(err);
     }
 
     try {
@@ -758,8 +768,10 @@ async function hydrateFromRemote() {
             .eq("device_id", deviceId);
         shifts = res.data;
         shiftError = res.error;
+        if (res.error && !lastErrorText) lastErrorText = formatSupabaseError(res.error);
     } catch (err) {
         shiftError = { message: formatErr(err) };
+        if (!lastErrorText) lastErrorText = formatErr(err);
     }
 
     try {
@@ -769,8 +781,10 @@ async function hydrateFromRemote() {
             .eq("device_id", deviceId);
         overrides = res.data;
         overrideError = res.error;
+        if (res.error && !lastErrorText) lastErrorText = formatSupabaseError(res.error);
     } catch (err) {
         overrideError = { message: formatErr(err) };
+        if (!lastErrorText) lastErrorText = formatErr(err);
     }
 
     if (weightError) {
@@ -820,6 +834,10 @@ async function hydrateFromRemote() {
         saveMap(OVERRIDE_STORAGE_KEY, overrideMap);
     }
 
+    if (hadError) {
+        setCloudStatus(`云端：读取失败${lastErrorText ? `（${shorten(lastErrorText)}）` : ""}`, "error");
+    }
+
     return !hadError;
 }
 
@@ -828,6 +846,7 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
     const deviceId = getDeviceId();
 
     let hadError = false;
+    let lastErrorText = "";
 
     if (forceDelete || !weightValue) {
         try {
@@ -838,9 +857,11 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .eq("date", dateKey);
             if (error) {
                 hadError = true;
+                if (!lastErrorText) lastErrorText = formatSupabaseError(error);
             }
         } catch (err) {
             hadError = true;
+            if (!lastErrorText) lastErrorText = formatErr(err);
         }
     } else {
         try {
@@ -850,9 +871,11 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .select("date");
             if (error) {
                 hadError = true;
+                if (!lastErrorText) lastErrorText = formatSupabaseError(error);
             }
         } catch (err) {
             hadError = true;
+            if (!lastErrorText) lastErrorText = formatErr(err);
         }
     }
 
@@ -865,9 +888,11 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .eq("date", dateKey);
             if (error) {
                 hadError = true;
+                if (!lastErrorText) lastErrorText = formatSupabaseError(error);
             }
         } catch (err) {
             hadError = true;
+            if (!lastErrorText) lastErrorText = formatErr(err);
         }
     } else {
         try {
@@ -877,9 +902,11 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .select("date");
             if (error) {
                 hadError = true;
+                if (!lastErrorText) lastErrorText = formatSupabaseError(error);
             }
         } catch (err) {
             hadError = true;
+            if (!lastErrorText) lastErrorText = formatErr(err);
         }
     }
 
@@ -894,9 +921,11 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .eq("date", dateKey);
             if (error) {
                 hadError = true;
+                if (!lastErrorText) lastErrorText = formatSupabaseError(error);
             }
         } catch (err) {
             hadError = true;
+            if (!lastErrorText) lastErrorText = formatErr(err);
         }
     } else {
         try {
@@ -911,15 +940,22 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
                 .select("date");
             if (error) {
                 hadError = true;
+                if (!lastErrorText) lastErrorText = formatSupabaseError(error);
             }
         } catch (err) {
             hadError = true;
+            if (!lastErrorText) lastErrorText = formatErr(err);
         }
     }
 
     // Intentionally silent in UI. If needed, we can add a subtle indicator later.
 
-    setCloudStatus(hadError ? "云端：同步失败" : "云端：已同步", hadError ? "error" : "ok");
+    setCloudStatus(
+        hadError
+            ? `云端：同步失败${lastErrorText ? `（${shorten(lastErrorText)}）` : ""}`
+            : "云端：已同步",
+        hadError ? "error" : "ok"
+    );
     return !hadError;
 }
 
