@@ -2,7 +2,7 @@ const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
 const WORKOUT_TYPES = ["背", "胸", "腿"];
 
-const BUILD_ID = "20260502b";
+const BUILD_ID = "20260502c";
 const NOTES_MD_FILE = "动作.md";
 
 
@@ -140,7 +140,7 @@ clearEntryBtn.addEventListener("click", async () => {
 });
 
 async function init() {
-    setCloudStatus("云端：未启用");
+    setCloudStatus("");
 
     if (!window.supabase) {
         const loaded = await loadSupabaseSdk();
@@ -160,12 +160,11 @@ async function init() {
             return;
         }
 
-        setCloudStatus("云端：连接中...");
         const ok = await hydrateFromRemote();
-        setCloudStatus(ok ? "云端：已连接" : "云端：读取失败", ok ? "ok" : "error");
+        if (ok) setCloudStatus("");
     } else {
         // Supabase not configured or SDK not ready; fall back to localStorage only.
-        setCloudStatus("云端：未启用");
+        setCloudStatus("");
     }
     render();
 }
@@ -188,9 +187,11 @@ function loadSupabaseSdk() {
 
 function setCloudStatus(message, level = "") {
     if (!cloudStatusEl) return;
-    cloudStatusEl.textContent = message;
+    const text = String(message || "").trim();
+    cloudStatusEl.textContent = text;
     cloudStatusEl.classList.remove("ok", "error");
-    if (level) cloudStatusEl.classList.add(level);
+    cloudStatusEl.classList.toggle("hidden", !text);
+    if (text && level) cloudStatusEl.classList.add(level);
 }
 
 function shorten(text, maxLen = 120) {
@@ -953,7 +954,7 @@ async function persistEntry(dateKey, weightValue, shiftValue, forceDelete = fals
     if (hadError) {
         setCloudStatus(`云端：同步失败${lastErrorText ? `（${shorten(lastErrorText)}）` : ""}`, "error");
     } else {
-        setCloudStatus("云端：已连接", "ok");
+        setCloudStatus("");
     }
     return !hadError;
 }
