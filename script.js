@@ -1,12 +1,15 @@
 const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
 const WORKOUT_TYPES_BEFORE = ["背", "胸", "腿"];
+const FIXED_PHASE_START = toDateOnly(new Date("2026-05-01"));
+const FIXED_PHASE_END = toDateOnly(new Date("2026-05-05"));
+const FIXED_PHASE_ORDER = ["胸", "背", "腿", "臂", "休息"];
+const CYCLE_START = toDateOnly(new Date("2026-05-06"));
 const WORKOUT_TYPES_AFTER = ["胸", "背", "腿"];
-const SWITCH_DATE = toDateOnly(new Date("2026-05-01"));
 const LEG_SPECIAL_START = toDateOnly(new Date("2026-05-16"));
 const LEG_SPECIAL_DAY = 16;
 
-const BUILD_ID = "20260518a";
+const BUILD_ID = "20260518c";
 const NOTES_MD_FILE = "动作.md";
 
 
@@ -519,18 +522,30 @@ function getBasePlannedWorkoutInfo(date) {
     }
 
     const shifted = applyTotalShift(d);
-    const useAfterOrder = d >= SWITCH_DATE;
-    const anchor = useAfterOrder ? SWITCH_DATE : START_DATE;
-    const order = useAfterOrder ? WORKOUT_TYPES_AFTER : WORKOUT_TYPES_BEFORE;
 
-    const diffDays = daysBetween(anchor, shifted);
+    if (shifted >= FIXED_PHASE_START && shifted <= FIXED_PHASE_END) {
+        const fixedIdx = daysBetween(FIXED_PHASE_START, shifted);
+        const fixedLabel = FIXED_PHASE_ORDER[fixedIdx] || "休息";
+        if (fixedLabel === "休息") {
+            return { kind: "rest", label: "休息" };
+        }
+        return { kind: "train", label: fixedLabel };
+    }
+
+    if (shifted >= CYCLE_START) {
+        const diffDays = daysBetween(CYCLE_START, shifted);
+        const idx = mod(diffDays, WORKOUT_TYPES_AFTER.length);
+        return { kind: "train", label: WORKOUT_TYPES_AFTER[idx] };
+    }
+
+    const diffDays = daysBetween(START_DATE, shifted);
     const idx = mod(diffDays, 4);
 
     if (idx === 3) {
         return { kind: "rest", label: "休息" };
     }
 
-    return { kind: "train", label: order[idx] };
+    return { kind: "train", label: WORKOUT_TYPES_BEFORE[idx] };
 }
 
 function isSpecialLegDay(date) {
