@@ -1,8 +1,12 @@
 const YEAR = 2026;
 const START_DATE = toDateOnly(new Date("2026-03-13"));
-const WORKOUT_TYPES = ["背", "胸", "腿"];
+const WORKOUT_TYPES_BEFORE = ["背", "胸", "腿"];
+const WORKOUT_TYPES_AFTER = ["胸", "背", "腿"];
+const SWITCH_DATE = toDateOnly(new Date("2026-05-01"));
+const LEG_SPECIAL_START = toDateOnly(new Date("2026-05-16"));
+const LEG_SPECIAL_DAY = 16;
 
-const BUILD_ID = "20260502d";
+const BUILD_ID = "20260518a";
 const NOTES_MD_FILE = "动作.md";
 
 
@@ -50,6 +54,7 @@ const clearEntryBtn = document.getElementById("clearEntry");
 
 let notesMarkdownText = "";
 let notesMarkdownPromise = null;
+let specialLegDayCache = {};
 
 if (openNotesBtn) {
     openNotesBtn.addEventListener("click", () => {
@@ -224,6 +229,7 @@ function formatSupabaseError(error) {
 }
 
 function render() {
+    specialLegDayCache = {};
     if (todayTextEl) {
         todayTextEl.textContent = `今日：${toKey(new Date())}`;
     }
@@ -473,7 +479,7 @@ function createDayCell(rawDate) {
     if (weightValue) {
         const weight = document.createElement("div");
         weight.className = "weight";
-        weight.textContent = `${weightValue}kg`;
+        weight.textContent = `${weightValue}`;
         day.appendChild(weight);
     }
 
@@ -492,6 +498,17 @@ function getWorkoutInfo(date) {
 }
 
 function getPlannedWorkoutInfo(date) {
+    const base = getBasePlannedWorkoutInfo(date);
+    if (base.kind !== "train" || base.label !== "腿") {
+        return base;
+    }
+    if (isSpecialLegDay(date)) {
+        return { kind: "train", label: "腿S" };
+    }
+    return base;
+}
+
+function getBasePlannedWorkoutInfo(date) {
     const d = toDateOnly(date);
     if (d < START_DATE) {
         return { kind: "rest", label: "未开始" };
@@ -501,14 +518,67 @@ function getPlannedWorkoutInfo(date) {
         return { kind: "rest", label: "休息" };
     }
 
-    const diffDays = daysBetween(START_DATE, applyTotalShift(d));
+    const shifted = applyTotalShift(d);
+    const useAfterOrder = d >= SWITCH_DATE;
+    const anchor = useAfterOrder ? SWITCH_DATE : START_DATE;
+    const order = useAfterOrder ? WORKOUT_TYPES_AFTER : WORKOUT_TYPES_BEFORE;
+
+    const diffDays = daysBetween(anchor, shifted);
     const idx = mod(diffDays, 4);
 
     if (idx === 3) {
         return { kind: "rest", label: "休息" };
     }
 
-    return { kind: "train", label: WORKOUT_TYPES[idx] };
+    return { kind: "train", label: order[idx] };
+}
+
+function isSpecialLegDay(date) {
+    const d = toDateOnly(date);
+    if (d < LEG_SPECIAL_START) return false;
+    const key = toKey(d);
+    const targetKey = getSpecialLegKeyForMonth(d.getFullYear(), d.getMonth());
+    return Boolean(targetKey && key === targetKey);
+}
+
+function getSpecialLegKeyForMonth(year, month) {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}`;
+    if (Object.prototype.hasOwnProperty.call(specialLegDayCache, key)) {
+        return specialLegDayCache[key];
+    }
+
+    const target = toDateOnly(new Date(year, month, LEG_SPECIAL_DAY));
+    if (target < LEG_SPECIAL_START) {
+        specialLegDayCache[key] = "";
+        return "";
+    }
+
+    const nearest = findNearestLegDay(target);
+    const result = nearest ? toKey(nearest) : "";
+    specialLegDayCache[key] = result;
+    return result;
+}
+
+function findNearestLegDay(target) {
+    const maxOffset = 40;
+    for (let offset = 0; offset <= maxOffset; offset += 1) {
+        if (offset === 0) {
+            if (isBaseLegDay(target)) return target;
+            continue;
+        }
+
+        const later = addDays(target, offset);
+        if (isBaseLegDay(later)) return later;
+
+        const earlier = addDays(target, -offset);
+        if (isBaseLegDay(earlier)) return earlier;
+    }
+    return null;
+}
+
+function isBaseLegDay(date) {
+    const info = getBasePlannedWorkoutInfo(date);
+    return info.kind === "train" && info.label === "腿";
 }
 
 function getOverrideForKey(key) {
