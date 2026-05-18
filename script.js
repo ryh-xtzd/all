@@ -9,7 +9,7 @@ const WORKOUT_TYPES_AFTER = ["胸", "背", "腿"];
 const LEG_SPECIAL_START = toDateOnly(new Date("2026-05-16"));
 const LEG_SPECIAL_DAY = 16;
 
-const BUILD_ID = "20260518c";
+const BUILD_ID = "20260518d";
 const NOTES_MD_FILE = "动作.md";
 
 
@@ -29,6 +29,9 @@ let weightMap = loadMap(WEIGHT_STORAGE_KEY);
 let shiftMap = loadMap(SHIFT_STORAGE_KEY);
 let overrideMap = loadMap(OVERRIDE_STORAGE_KEY);
 let selectedDateKey = "";
+
+shiftMap = clearMay2026Shifts(shiftMap);
+saveMap(SHIFT_STORAGE_KEY, shiftMap);
 
 const monthTitle = document.getElementById("monthTitle");
 const calendarGrid = document.getElementById("calendarGrid");
@@ -691,6 +694,16 @@ function loadMap(storageKey) {
     } catch (_) {
         return {};
     }
+}
+
+function clearMay2026Shifts(map) {
+    const cleaned = { ...map };
+    Object.keys(cleaned).forEach((key) => {
+        if (key.startsWith("2026-05-")) {
+            delete cleaned[key];
+        }
+    });
+    return cleaned;
 }
 
 function saveMap(storageKey, map) {
